@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blox Fruits: Угадай Кто? (41 Фрукт)</title>
+    <style>
+        :root {
+            --common: #95a5a6;
+            --uncommon: #2ecc71;
+            --rare: #3498db;
+            --legendary: #9b59b6;
+            --mythical: #e91e63;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #0c0d17;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 { color: #f1c40f; text-shadow: 0 0 10px rgba(241, 196, 15, 0.5); margin-bottom: 5px; }
+
+        .game-info {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .random-result {
+            font-size: 22px;
+            font-weight: bold;
+            color: #55efc4;
+            margin-top: 10px;
+            min-height: 30px;
+            padding: 10px;
+            border: 2px dashed #55efc4;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-pick { background: #f1c40f; color: #000; }
+        .btn-reset { background: #e74c3c; color: white; }
+        button:hover { transform: scale(1.05); filter: brightness(1.1); }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 10px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .card {
+            background: #1a1c2c;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+
+        /* Цвета редкости */
+        .common { border-color: var(--common); }
+        .uncommon { border-color: var(--uncommon); }
+        .rare { border-color: var(--rare); }
+        .legendary { border-color: var(--legendary); }
+        .mythical { border-color: var(--mythical); }
+
+        .card:hover { transform: translateY(-3px); background: #25283d; }
+
+        .card.off {
+            opacity: 0.1;
+            filter: grayscale(1);
+        }
+
+        .card.off::after {
+            content: "✕";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 50px;
+            color: #ff4757;
+            font-weight: bold;
+        }
+
+        .icon { font-size: 35px; margin-bottom: 5px; display: block; }
+        .name { font-size: 12px; font-weight: bold; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+    <h1>Blox Fruits: Guess Who?</h1>
+    
+    <div class="game-info">
+        <div>Нажимай на фрукт, чтобы убрать его.</div>
+        <div id="randomBox" class="random-result"></div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-pick" onclick="pickRandom()">ЗАГАДАТЬ ФРУКТ</button>
+        <button class="btn-reset" onclick="resetGrid()">СБРОСИТЬ ПОЛЕ</button>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <script>
+        const fruits = [
+            // Common
+            {n: "Rocket", r: "common", i: "🚀"}, {n: "Spin", r: "common", i: "🌀"}, {n: "Chop", r: "common", i: "🔪"}, 
+            {n: "Spring", r: "common", i: "🔋"}, {n: "Bomb", r: "common", i: "💣"}, {n: "Spike", r: "common", i: "🌵"},
+            {n: "Smoke", r: "common", i: "💨"},
+            // Uncommon
+            {n: "Flame", r: "uncommon", i: "🔥"}, {n: "Falcon", r: "uncommon", i: "🦅"}, {n: "Ice", r: "uncommon", i: "❄️"}, 
+            {n: "Sand", r: "uncommon", i: "⏳"}, {n: "Dark", r: "uncommon", i: "🌑"}, {n: "Diamond", r: "uncommon", i: "💎"},
+            // Rare
+            {n: "Light", r: "rare", i: "✨"}, {n: "Rubber", r: "rare", i: "🎈"}, {n: "Barrier", r: "rare", i: "🧱"}, 
+            {n: "Ghost", r: "rare", i: "👻"},
+            // Legendary
+            {n: "Magma", r: "legendary", i: "🌋"}, {n: "Quake", r: "legendary", i: "🫨"}, {n: "Buddha", r: "legendary", i: "🧘"}, 
+            {n: "Love", r: "legendary", i: "💖"}, {n: "Spider", r: "legendary", i: "🕸️"}, {n: "Sound", r: "legendary", i: "🎵"}, 
+            {n: "Phoenix", r: "legendary", i: "🐦"}, {n: "Portal", r: "legendary", i: "🌌"}, {n: "Rumble", r: "legendary", i: "⚡"}, 
+            {n: "Pain", r: "legendary", i: "🐾"}, {n: "Blizzard", r: "legendary", i: "🌪️"},
+            // Mythical
+            {n: "Gravity", r: "mythical", i: "🪐"}, {n: "Mammoth", r: "mythical", i: "🦣"}, {n: "T-Rex", r: "mythical", i: "🦖"}, 
+            {n: "Dough", r: "mythical", i: "🍩"}, {n: "Shadow", r: "mythical", i: "👤"}, {n: "Venom", r: "mythical", i: "🧪"}, 
+            {n: "Control", r: "mythical", i: "🕹️"}, {n: "Spirit", r: "mythical", i: "👻"}, {n: "Dragon", r: "mythical", i: "🐉"}, 
+            {n: "Leopard", r: "mythical", i: "🐆"}, {n: "Kitsune", r: "mythical", i: "🦊"}, {n: "Gas", r: "mythical", i: "🧪"},
+            {n: "Yeti", r: "mythical", i: "❄️👹"}
+        ];
+
+        const grid = document.getElementById('grid');
+        const randomBox = document.getElementById('randomBox');
+
+        function createGrid() {
+            grid.innerHTML = '';
+            fruits.forEach(f => {
+                const card = document.createElement('div');
+                card.className = `card ${f.r}`;
+                card.innerHTML = `<span class="icon">${f.i}</span><span class="name">${f.n}</span>`;
+                card.onclick = () => card.classList.toggle('off');
+                grid.appendChild(card);
+            });
+        }
+
+        function pickRandom() {
+            const randomFruit = fruits[Math.floor(Math.random() * fruits.length)];
+            randomBox.style.display = 'block';
+            randomBox.innerText = "ЗАГАДАНО: " + randomFruit.n.toUpperCase();
+            // Подсветка для эффекта
+            randomBox.style.borderColor = '#f1c40f';
+            setTimeout(() => randomBox.style.borderColor = '#55efc4', 500);
+        }
+
+        function resetGrid() {
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('off'));
+            randomBox.style.display = 'none';
+        }
+
+        createGrid();
+    </script>
+</body>
+</html>
